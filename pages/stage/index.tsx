@@ -1,60 +1,92 @@
+import { message } from 'antd'
+import services from '../../services'
 import styles from '../../styles/Stage.module.css'
 import React, { useEffect, useState } from 'react'
 import { Result } from '../../entity/result.entity'
-import service from '../../services/calculator.service'
-import { Operation } from '../../entity/operation.entity'
-import { defaultStage, Stage, StageNullable } from '../../entity/stage.entity'
-import CalculatorInput from '../../components/CalculatorInput'
-import { CreateStageBody, UpdateStageBody } from '../../dtos/stage.dto'
-import CalculatorButton from '../../components/CalculatorButton'
-import { message } from 'antd'
 import { LoadingOutlined } from '@ant-design/icons';
-
-interface Loadings {
-    stage: boolean
-}
+import { Operation } from '../../entity/operation.entity'
+import CalculatorInput from '../../components/CalculatorInput'
+import CalculatorButton from '../../components/CalculatorButton'
+import { CreateStageBody, UpdateStageBody } from '../../dtos/stage.dto'
+import { defaultStage, Stage, StageNullable } from '../../entity/stage.entity'
+import CalculatorOperationList from '../../components/CalculatorOperationList';
+import CalculatorOperationSelection from '../../components/CalculatorOperationSelection';
+import OperationType from '../../entity/type.enum';
+import { CreateOperationBody } from '../../dtos/operation.dto';
 
 const StageComponent: React.FunctionComponent = () => {
-    const [ results, setResults ] = useState<Result[]>()
-    const [ mode, setMode ] = useState<"new"|"edit">("edit");
-    const [ operations, setOperations ] = useState<Operation[]>([])
-    const [ loadings, setLoadings ] = useState<Loadings>({ stage: false })
+
     const [ stage, setStage ] = useState<Stage>({ ...defaultStage, level: 1 })
+    const [ operations, setOperations ] = useState<Operation[]>([])
+    const [ results, setResults ] = useState<Result[]>()
+
+    const [ mode, setMode ] = useState<"new"|"edit">("edit");
+    const [ operationType, setOperationType ] = useState<OperationType>(0);
+    const [ operationValue, setOperationValue ] = useState<number>(0);
+
+    const [ stageLoading, setStageLoading ] = useState<boolean>(false);
+    const [ operationsLoading, setOpearationLoading ] = useState<boolean>(false);
     
     const createStage = async () => {
         const { end, level, moves, start }: CreateStageBody = stage
 
         if ((end || end == 0) && level && moves && (start || start == 0))
-            setStage(await service.createStage({ end, level, moves, start, state: 1 }))
+            setStage(await services.stage.createStage({ end, level, moves, start, state: 1 }))
         else
             message.error('Parametros inválidos')
     }
     
     const updateStage = async () => {
         const { id, end, level, moves, start, state }: UpdateStageBody = stage
-        setStage(await service.updateStage({ id, end, level, moves, start, state }))
+        setStage(await services.stage.updateStage({ id, end, level, moves, start, state }))
     }
 
-    const getStageByLevel = async (id: number) => {
-        setStage(await service.fetchStageByLevel(id))
+    const fetchStageByLevel = async (id: number) => {
+        setStage(await services.stage.fetchStageByLevel(id))
     }
 
     const saveStage = (payload: StageNullable) => {
         setStage({ ...stage, ...payload })
     }
 
-    useEffect(() => console.log(loadings.stage), [loadings.stage]);
-    useEffect(() => { setMode(stage.id ? 'edit' : 'new') }, [stage.id]);
+    const addOperation = async () => {
+        const newOperation: CreateOperationBody = {
+            stageId: stage.id,
+            type: operationType,
+            value: operationValue,
+        }
+
+        const savedOperation = await services.operation.createOperation(newOperation);
+        
+        setOperations([ ...operations, savedOperation ])
+    }
+
+    useEffect(() => {
+
+        if (stage.id) {
+            setMode('edit')
+            setOpearationLoading(true)
+
+            services.operation.fetchOperationByStage(stage.id)
+                .then(operations => setOperations(operations))
+                .catch(() => setOperations([]))
+                .finally(() => setTimeout(() => setOpearationLoading(false), 2000))
+
+        } else {
+            setMode('new')
+        }
+    }, [stage.id]);
+
     useEffect(() => { 
-        setLoadings({ stage: true })
+        setStageLoading(true)
         saveStage({ id: undefined })
-        getStageByLevel(stage.level).finally(() => setTimeout(() => setLoadings({ stage: false }), 2000) )
+        fetchStageByLevel(stage.level).finally(() => setTimeout(() => setStageLoading(false), 2000) )
      }, [stage.level]);
 
     return (
         <div className={styles.main}>
             <div className={styles.body}>
-                <h1 style={{ margin: '10px' }} children={<>Stage {loadings.stage ? <LoadingOutlined /> : `${stage?.level}` } </> } />
+                <h1 style={{ margin: '10px' }} children={<>Stage {stageLoading ? <LoadingOutlined /> : `${stage?.level}` } </> } />
                 <div style={{ display: 'flex' }}>
                     <CalculatorInput
                         min={1}
@@ -81,18 +113,22 @@ const StageComponent: React.FunctionComponent = () => {
                 </div>
 
                 <div style={{ display: 'flex' }}>
-                    <CalculatorButton text="Salvar" onClickHandler={mode == "new" ? createStage : updateStage} />
-                    <CalculatorButton text="Novo" onClickHandler={createStage} />
+                    <CalculatorButton text="Save" onClickHandler={mode == "new" ? createStage : updateStage} />
+                    <CalculatorButton text="New" onClickHandler={() => {}} />
+                </div>
+                
+                <div style={{ display: 'flex' }}>
+                    <CalculatorOperationList operations={operations} />
                 </div>
 
                 <div style={{ display: 'flex' }}>
-                    <CalculatorInput name="operation" value={1} setValue={() => {}} />
-                    <CalculatorInput name="value" value={1} setValue={() => {}} />
+                    <CalculatorOperationSelection value={operationType} setValue={setOperationType} />
+                    <CalculatorInput name="value" value={operationValue} setValue={setOperationValue} />
+                    <CalculatorButton text="Add" onClickHandler={addOperation} margin />
                 </div>
 
                 <div style={{ display: 'flex' }}>
-                    <CalculatorButton text="Adicionar" onClickHandler={mode == "new" ? createStage : updateStage} />
-                    <CalculatorButton text="Calcular" onClickHandler={createStage} />
+                    <CalculatorButton text="Calculate" onClickHandler={createStage} />
                 </div>
 
                 <div style={{ display: 'flex' }}>

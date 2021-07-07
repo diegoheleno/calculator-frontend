@@ -5,11 +5,18 @@ interface CalculatorButtonProps {
     onClickHandler: () => void
     text: string
     loading?: boolean
+    margin?: boolean
 }
 
 const CalculatorButton: React.FunctionComponent<CalculatorButtonProps> = props => {
-    
-    const button = <Button loading={props.loading} color="blue" children={props.text} className={styles.button} onClick={props.onClickHandler} />
+
+    const button = <Button
+        loading={props.loading}
+        children={props.text}
+        className={styles.button}
+        onClick={props.onClickHandler}
+        style={{ marginTop: props.margin ? '21px' : undefined }}
+    />
 
     return <div
         children={button}
