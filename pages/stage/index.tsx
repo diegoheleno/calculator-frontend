@@ -13,12 +13,15 @@ import CalculatorOperationList from '../../components/CalculatorOperationList';
 import CalculatorOperationSelection from '../../components/CalculatorOperationSelection';
 import OperationType from '../../entity/type.enum';
 import { CreateOperationBody } from '../../dtos/operation.dto';
+import CalculatorResult from '../../components/CalculatorResult'
+import CalculatorResultList from '../../components/CalculatorResultList'
 
 const StageComponent: React.FunctionComponent = () => {
 
     const [ stage, setStage ] = useState<Stage>({ ...defaultStage, level: 1 })
     const [ operations, setOperations ] = useState<Operation[]>([])
     const [ results, setResults ] = useState<Result[]>()
+    const [ corrects, setCorrects ] = useState<Result[]>()
 
     const [ mode, setMode ] = useState<"new"|"edit">("edit");
     const [ operationType, setOperationType ] = useState<OperationType>(0);
@@ -62,7 +65,6 @@ const StageComponent: React.FunctionComponent = () => {
     }
 
     useEffect(() => {
-
         if (stage.id) {
             setMode('edit')
             setOpearationLoading(true)
@@ -127,14 +129,7 @@ const StageComponent: React.FunctionComponent = () => {
                     <CalculatorButton text="Add" onClickHandler={addOperation} margin />
                 </div>
 
-                <div style={{ display: 'flex' }}>
-                    <CalculatorButton text="Calculate" onClickHandler={createStage} />
-                </div>
-
-                <div style={{ display: 'flex' }}>
-                    <div style={{ width: '50%', padding: '10px' }}>Results</div>
-                    <div style={{ width: '50%', padding: '10px' }}>Corrects</div>
-                </div>
+                <CalculatorResultList stage={stage} operations={operations} />
             </div>
         </div>
     );

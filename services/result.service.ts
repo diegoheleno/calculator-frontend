@@ -1,13 +1,13 @@
 import { message } from "antd"
 import { defaultResult, Result } from "../entity/result.entity"
-import { CreateResultBody, FetchResultResponse, UpdateResultBody } from "../dtos/result.dto"
+import { CreateResultBody, FetchResultListResponse, FetchResultResponse, UpdateResultBody } from "../dtos/result.dto"
 
 const baseUrl = 'http://localhost:5555/calculator/result'
 
-export async function fetchResultByStage(stageId: number): Promise<Result> {
+export async function fetchResultByStage(stageId: string): Promise<Result[]> {
     try {
         const res = await fetch(`${baseUrl}?stageId=${stageId}`)
-        const response: FetchResultResponse = await res.json()
+        const response: FetchResultListResponse = await res.json()
 
         if (response.status == 200) {
             return response.data
@@ -17,7 +17,7 @@ export async function fetchResultByStage(stageId: number): Promise<Result> {
         }
     }
     catch {
-        return defaultResult;
+        return [];
     }
 }
 
