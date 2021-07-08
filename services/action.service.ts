@@ -4,7 +4,7 @@ import { CreateActionBody, FetchActionListResponse, FetchActionResponse } from "
 
 const baseUrl = 'http://localhost:5555/calculator/action'
 
-export async function fetchActionByStage(resultId: string): Promise<Action[]> {
+export async function fetchActionByResult(resultId: string): Promise<Action[]> {
     try {
         const res = await fetch(`${baseUrl}?resultId=${resultId}`)
         const response: FetchActionListResponse = await res.json()
@@ -43,7 +43,7 @@ export async function createAction(action: CreateActionBody[]): Promise<Action> 
 
 const service = {
     createAction,
-    fetchActionByStage
+    fetchActionByResult
 }
 
 export default service

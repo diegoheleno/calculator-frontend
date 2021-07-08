@@ -2,7 +2,6 @@ import { message } from 'antd'
 import services from '../../services'
 import styles from '../../styles/Stage.module.css'
 import React, { useEffect, useState } from 'react'
-import { Result } from '../../entity/result.entity'
 import { LoadingOutlined } from '@ant-design/icons';
 import { Operation } from '../../entity/operation.entity'
 import CalculatorInput from '../../components/CalculatorInput'
@@ -13,22 +12,18 @@ import CalculatorOperationList from '../../components/CalculatorOperationList';
 import CalculatorOperationSelection from '../../components/CalculatorOperationSelection';
 import OperationType from '../../entity/type.enum';
 import { CreateOperationBody } from '../../dtos/operation.dto';
-import CalculatorResult from '../../components/CalculatorResult'
 import CalculatorResultList from '../../components/CalculatorResultList'
 
 const StageComponent: React.FunctionComponent = () => {
 
     const [ stage, setStage ] = useState<Stage>({ ...defaultStage, level: 1 })
     const [ operations, setOperations ] = useState<Operation[]>([])
-    const [ results, setResults ] = useState<Result[]>()
-    const [ corrects, setCorrects ] = useState<Result[]>()
 
     const [ mode, setMode ] = useState<"new"|"edit">("edit");
     const [ operationType, setOperationType ] = useState<OperationType>(0);
     const [ operationValue, setOperationValue ] = useState<number>(0);
 
     const [ stageLoading, setStageLoading ] = useState<boolean>(false);
-    const [ operationsLoading, setOpearationLoading ] = useState<boolean>(false);
     
     const createStage = async () => {
         const { end, level, moves, start }: CreateStageBody = stage
@@ -67,15 +62,14 @@ const StageComponent: React.FunctionComponent = () => {
     useEffect(() => {
         if (stage.id) {
             setMode('edit')
-            setOpearationLoading(true)
 
             services.operation.fetchOperationByStage(stage.id)
                 .then(operations => setOperations(operations))
                 .catch(() => setOperations([]))
-                .finally(() => setTimeout(() => setOpearationLoading(false), 2000))
 
         } else {
             setMode('new')
+            setOperations([])
         }
     }, [stage.id]);
 
