@@ -1,4 +1,9 @@
 import { Result } from "../entity/result.entity";
+import { Operation } from "../entity/operation.entity";
+
+export interface ResultDto extends Result {
+    operations: Operation[]
+}
 
 export interface FetchResultResponse {
     status: number;

@@ -2,23 +2,21 @@ import { message } from 'antd'
 import services from '../../services'
 import styles from '../../styles/Stage.module.css'
 import React, { useEffect, useState } from 'react'
+import OperationType from '../../entity/type.enum';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Operation } from '../../entity/operation.entity'
 import CalculatorInput from '../../components/CalculatorInput'
+import { CreateOperationBody } from '../../dtos/operation.dto';
 import CalculatorButton from '../../components/CalculatorButton'
-import { CreateStageBody, UpdateStageBody } from '../../dtos/stage.dto'
+import CalculatorResultList from '../../components/CalculatorResultList'
 import { defaultStage, Stage, StageNullable } from '../../entity/stage.entity'
 import CalculatorOperationList from '../../components/CalculatorOperationList';
+import { CreateStageBody, StageDto, UpdateStageBody } from '../../dtos/stage.dto'
 import CalculatorOperationSelection from '../../components/CalculatorOperationSelection';
-import OperationType from '../../entity/type.enum';
-import { CreateOperationBody } from '../../dtos/operation.dto';
-import CalculatorResultList from '../../components/CalculatorResultList'
 
 const StageComponent: React.FunctionComponent = () => {
 
-    const [ stage, setStage ] = useState<Stage>({ ...defaultStage, level: 1 })
-    const [ operations, setOperations ] = useState<Operation[]>([])
-
+    const [ stage, setStage ] = useState<StageDto>({ ...defaultStage, level: 1, state: 0, operations: [], results: [] })
+    
     const [ mode, setMode ] = useState<"new"|"edit">("edit");
     const [ operationType, setOperationType ] = useState<OperationType>(0);
     const [ operationValue, setOperationValue ] = useState<number>(0);
@@ -28,15 +26,18 @@ const StageComponent: React.FunctionComponent = () => {
     const createStage = async () => {
         const { end, level, moves, start }: CreateStageBody = stage
 
-        if ((end || end == 0) && level && moves && (start || start == 0))
-            setStage(await services.stage.createStage({ end, level, moves, start, state: 1 }))
+        if ((end || end == 0) && level && moves && (start || start == 0)) {
+            const _stage = await services.stage.createStage({ end, level, moves, start, state: 1 })
+            setStage({ ...stage, ..._stage })
+        }
         else
             message.error('Parametros inválidos')
     }
     
     const updateStage = async () => {
         const { id, end, level, moves, start, state }: UpdateStageBody = stage
-        setStage(await services.stage.updateStage({ id, end, level, moves, start, state }))
+        const _stage = await services.stage.updateStage({ id, end, level, moves, start, state })
+        setStage({ ...stage, ..._stage })
     }
 
     const fetchStageByLevel = async (id: number) => {
@@ -56,22 +57,10 @@ const StageComponent: React.FunctionComponent = () => {
 
         const savedOperation = await services.operation.createOperation(newOperation);
         
-        setOperations([ ...operations, savedOperation ])
+        setStage({ ...stage, operations: [ ...stage.operations, savedOperation ] })
     }
 
-    useEffect(() => {
-        if (stage.id) {
-            setMode('edit')
-
-            services.operation.fetchOperationByStage(stage.id)
-                .then(operations => setOperations(operations))
-                .catch(() => setOperations([]))
-
-        } else {
-            setMode('new')
-            setOperations([])
-        }
-    }, [stage.id]);
+    useEffect(() => stage.id ? setMode('edit') : setMode('new'), [stage.id]);
 
     useEffect(() => { 
         setStageLoading(true)
@@ -114,7 +103,7 @@ const StageComponent: React.FunctionComponent = () => {
                 </div>
                 
                 <div style={{ display: 'flex' }}>
-                    <CalculatorOperationList operations={operations} />
+                    <CalculatorOperationList operations={stage.operations} />
                 </div>
 
                 <div style={{ display: 'flex' }}>
@@ -123,7 +112,7 @@ const StageComponent: React.FunctionComponent = () => {
                     <CalculatorButton text="Add" onClickHandler={addOperation} margin />
                 </div>
 
-                <CalculatorResultList stage={stage} operations={operations} />
+                <CalculatorResultList stage={stage} setStage={setStage} />
             </div>
         </div>
     );

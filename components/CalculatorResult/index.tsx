@@ -7,6 +7,7 @@ interface ResultDto extends Result {
 interface CalculatorResultProps {
     results: ResultDto[];
     color: string;
+    start: number;
 }
 
 const CalculatorResult: React.FunctionComponent<CalculatorResultProps> = props => {
@@ -34,7 +35,7 @@ const CalculatorResult: React.FunctionComponent<CalculatorResultProps> = props =
             <div
                 className={styles.divRowResult}
                 children={[
-                    <div className={styles.result} children={"0"} />,
+                    <div className={styles.result} children={props.start} />,
                     ...result.operations.map(operation => getOperationElement(operation)),
                     <div className={styles.result} style={{ backgroundColor: props.color }} children={"=" + result.value} />
                 ]}

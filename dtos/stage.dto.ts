@@ -1,9 +1,16 @@
+import { ResultDto } from "./result.dto";
 import { Stage } from "../entity/stage.entity";
+import { Operation } from "../entity/operation.entity";
+
+export interface StageDto extends Stage {
+    results: ResultDto[]
+    operations: Operation[]
+}
 
 export interface FetchStageResponse {
     status: number;
     message: string
-    data: Stage
+    data: StageDto
 }
 
 export interface CreateStageBody {

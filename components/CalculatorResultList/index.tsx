@@ -1,6 +1,5 @@
 import services from '../../services'
 import React, { useEffect, useState } from 'react'
-import { Stage } from '../../entity/stage.entity'
 import CalculatorButton from '../CalculatorButton'
 import CalculatorResult from '../CalculatorResult'
 import styles from './calculator-result.module.css'
@@ -8,58 +7,42 @@ import { Result } from '../../entity/result.entity'
 import { Action } from '../../entity/action.entity'
 import { StageCalculate } from '../../pages/stage/stage.calculate'
 import { defaultOperation, Operation } from '../../entity/operation.entity'
+import { StageDto } from '../../dtos/stage.dto'
+import { ResultDto } from '../../dtos/result.dto'
 
 interface CalculatorOperationListProps {
-    stage: Stage;
-    operations: Operation[]
-}
-
-interface ResultDto extends Result {
-    operations: Operation[]
+    stage: StageDto;
+    setStage: any;
 }
 
 const CalculatorOperationList: React.FunctionComponent<CalculatorOperationListProps> = props => {
-    const { stage, operations } = props
+    const { stage } = props
 
     const [indexes, setIndexes] = useState<number[]>([])
-    const [loading, setLoading] = useState<boolean>(false)
     const [results, setResults] = useState<ResultDto[]>([])
     const [corrects, setCorrects] = useState<ResultDto[]>([])
     const [progress, setProgress] = useState<number>(0)
     const [possibilities, setPossibilities] = useState<number>(0)
-    const calculator = new StageCalculate(stage, operations, indexes)
+    const calculator = new StageCalculate(stage, indexes)
 
     useEffect(() => {
-        if (stage.id) {
-            services.result.fetchResultByStage(stage.id).then(async results => {
-                if (!results || !results.length) {
-                    setCorrects([])
-                    setResults([])
-                    return
-                }
+        if (stage.results && stage.results.length) {
+            const _corrects = stage.results.filter(result => result.value == stage.end)
+            const _results = stage.results.filter(result => result.value != stage.end)
 
-                const promises = results.map(result => services.action.fetchActionByResult(result.id))
-                const actions = await Promise.all(promises)
-
-                const dtos: ResultDto[] = results.map((result, index) => ({
-                    ...result,
-                    operations: actions[index].map(action => props.operations.find(operation => operation.id == action.operationId) ?? defaultOperation)
-                }))
-
-                setCorrects(dtos.filter(dto => dto.value == stage.end))
-                setResults(dtos.filter(dto => dto.value != stage.end))
-            })
+            setCorrects(_corrects);
+            setResults(_results);
         } else {
             setCorrects([])
             setResults([])
         }
-    }, [stage.id])
+    }, [stage.results])
 
     useEffect(() => {
-        setProgress(0)
-        setPossibilities(stage.moves ** operations.length)
+        setProgress(stage.results.length ?? 0)
+        setPossibilities(stage.operations.length ** stage.moves)
         setIndexes(Array(stage.moves).fill(0))
-    }, [stage.moves, operations.length])
+    }, [stage.moves, stage.operations.length])
 
     useEffect(() => {
         if (progress > 0 && progress < possibilities)
@@ -81,7 +64,7 @@ const CalculatorOperationList: React.FunctionComponent<CalculatorOperationListPr
         for (let i = 0; i < indexes.length; i++) {
             indexes[i]++;
 
-            if (indexes[i] < operations.length)
+            if (indexes[i] < stage.operations.length)
                 return setIndexes(indexes);
 
             indexes[i] = 0;
@@ -95,7 +78,7 @@ const CalculatorOperationList: React.FunctionComponent<CalculatorOperationListPr
         const promises: Promise<any>[] = [saveResult(result), saveActions(actions)]
 
         const operations: Operation[] = actions
-            .map(action => props.operations.find(operation => action.operationId == operation.id))
+            .map(action => props.stage.operations.find(operation => action.operationId == operation.id))
             .map(operation => operation ?? defaultOperation)
 
         if (result.value == stage.end) {
@@ -106,39 +89,54 @@ const CalculatorOperationList: React.FunctionComponent<CalculatorOperationListPr
             setResults(results)
         }
         nextIndex();
-        await Promise.all(promises)
         setProgress(progress + 1)
+
+        await Promise.all(promises)
     }
 
-    const clickHandler = async () => {
+    const clickCalculateHandler = async () => {
         await execute()
     }
 
-    return <div style={{ width: '100%', padding: '10px', marginTop: '40px' }}>
+    const clickClearHandler = async () => {
+        await services.stage.clear(stage.id);
+        const _stage = await services.stage.fetchStageByLevel(stage.level);
+        props.setStage({ ..._stage })
+    }
 
-        <div style={{ display: 'flex', width: '100%', padding: '10px' }}>
-            <CalculatorButton text="Calculate" onClickHandler={clickHandler} />
+    return <div style={{ width: '100%', marginTop: '40px' }}>
 
-            <div style={{ width: '50%', padding: '10px' }}>
-                <progress
-                    id="file"
-                    value={progress}
-                    style={{ width: '100%', height: '100%' }}
-                    max={possibilities}
-                    children={(progress / possibilities) * 100}
-                />
-            </div>
+        <div style={{ display: 'flex', width: '100%' }}>
+            <CalculatorButton text="Calculate" onClickHandler={clickCalculateHandler} />
+            <CalculatorButton text="Clear" onClickHandler={clickClearHandler} />
         </div>
 
-        <div style={{ display: 'flex', width: '100%', padding: '10px' }}>
+        
+        <div style={{ width: '100%', padding: '10px', height: '50px' }}>
+                
+            <progress
+                value={progress}
+                style={{ width: '100%', height: '100%' }}
+                max={possibilities}
+            />
+
+            <div
+                style={{ display: 'flex', justifyContent: 'flex-end' }}
+                children={
+                    <label children={`${progress} of ${possibilities} - ${Math.floor(possibilities ? (progress / possibilities) * 100: 0)}%`} />
+                }
+            />
+        </div>
+
+        <div style={{ display: 'flex', width: '100%' }}>
             <div style={{ width: '50%', padding: '10px' }}>
                 <label className={styles.label} children="results" />
-                <CalculatorResult color='#eb5a46' results={results} />
+                <CalculatorResult color='#eb5a46' results={results} start={stage.start} />
             </div>
 
             <div style={{ width: '50%', padding: '10px' }}>
                 <label className={styles.label} children="corrects" />
-                <CalculatorResult color='#61bd4f' results={corrects} />
+                <CalculatorResult color='#61bd4f' results={corrects} start={stage.start} />
             </div>
         </div>
     </div>

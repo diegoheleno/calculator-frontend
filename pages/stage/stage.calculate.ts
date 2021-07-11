@@ -1,19 +1,18 @@
-import { Stage } from "../../entity/stage.entity";
-import { Operation } from "../../entity/operation.entity";
+import { StageDto } from "../../dtos/stage.dto";
+import OperationType from "../../entity/type.enum";
 import { Action } from "../../entity/action.entity";
 import { Result } from "../../entity/result.entity";
-import OperationType from "../../entity/type.enum";
+import { Operation } from "../../entity/operation.entity";
 
 export class StageCalculate {
 
     constructor(
-        public readonly stage: Stage,
-        public readonly operations: Operation[],
+        public readonly stage: StageDto,
         public readonly indexes: number[],
     ) { }
 
     calculateNext(result: Result) {
-        const operations: Operation[] = this.indexes.map(index => this.operations[index])
+        const operations: Operation[] = this.indexes.map(index => this.stage.operations[index])
         const actions: Action[] = operations.map(operation => ({ id: '', operationId: operation.id, resultId: result.id }))
         result.value = this.calculate(operations);
         return { result, actions }
