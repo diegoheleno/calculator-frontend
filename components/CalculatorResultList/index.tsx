@@ -9,20 +9,24 @@ import { StageCalculate } from '../../pages/stage/stage.calculate'
 import { defaultOperation, Operation } from '../../entity/operation.entity'
 import { StageDto } from '../../dtos/stage.dto'
 import { ResultDto } from '../../dtos/result.dto'
+import { createReducers } from '../../store'
+import { connect } from 'react-redux'
 
-interface CalculatorOperationListProps {
+interface CalculatorResultListProps {
     stage: StageDto;
-    setStage: any;
+    dispatch: any;
 }
 
-const CalculatorOperationList: React.FunctionComponent<CalculatorOperationListProps> = props => {
+const CalculatorResultList: React.FunctionComponent<CalculatorResultListProps> = (props: CalculatorResultListProps) => {
     const { stage } = props
+    const state = createReducers(props.dispatch)
 
     const [indexes, setIndexes] = useState<number[]>([])
     const [results, setResults] = useState<ResultDto[]>([])
     const [corrects, setCorrects] = useState<ResultDto[]>([])
     const [progress, setProgress] = useState<number>(0)
     const [possibilities, setPossibilities] = useState<number>(0)
+
     const calculator = new StageCalculate(stage, indexes)
 
     useEffect(() => {
@@ -73,14 +77,22 @@ const CalculatorOperationList: React.FunctionComponent<CalculatorOperationListPr
 
     const execute = async () => {
         const newResult = await services.result.createResult({ stageId: stage.id, value: 0 })
+        console.log('newResult: ', newResult)
         const { actions, result } = calculator.calculateNext(newResult);
+        console.log('actions: ', actions)
+        console.log('result: ', result)
 
-        const promises: Promise<any>[] = [saveResult(result), saveActions(actions)]
+        const promises: Promise<any>[] = [
+            saveResult(result),
+            saveActions(actions)
+        ]
 
         const operations: Operation[] = actions
             .map(action => props.stage.operations.find(operation => action.operationId == operation.id))
             .map(operation => operation ?? defaultOperation)
 
+        console.log('operations: ', operations)
+        
         if (result.value == stage.end) {
             corrects.unshift({ ...result, operations })
             setCorrects(corrects)
@@ -101,7 +113,7 @@ const CalculatorOperationList: React.FunctionComponent<CalculatorOperationListPr
     const clickClearHandler = async () => {
         await services.stage.clear(stage.id);
         const _stage = await services.stage.fetchStageByLevel(stage.level);
-        props.setStage({ ..._stage })
+        state.saveStage({ ..._stage })
     }
 
     return <div style={{ width: '100%', marginTop: '40px' }}>
@@ -142,4 +154,4 @@ const CalculatorOperationList: React.FunctionComponent<CalculatorOperationListPr
     </div>
 }
 
-export default CalculatorOperationList
+export default connect((store: any) => ({ stage: store }))(CalculatorResultList);

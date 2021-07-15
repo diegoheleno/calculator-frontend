@@ -1,17 +1,16 @@
+import { ResultDto } from '../../dtos/result.dto'
 import { Operation } from '../../entity/operation.entity'
 import { Result } from '../../entity/result.entity'
 import styles from './calculator-result.module.css'
-interface ResultDto extends Result {
-    operations: Operation[]
-}
+
 interface CalculatorResultProps {
-    results: ResultDto[];
     color: string;
     start: number;
+    results: ResultDto[];
 }
 
 const CalculatorResult: React.FunctionComponent<CalculatorResultProps> = props => {
-
+    
     const icons = ['+', '-', '/', 'x', '<<', '<']
 
     const operationToString = (operation: Operation) => {

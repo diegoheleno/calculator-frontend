@@ -1,10 +1,15 @@
 import { ResultDto } from "./result.dto";
-import { Stage } from "../entity/stage.entity";
+import { Stage, StageNullable } from "../entity/stage.entity";
 import { Operation } from "../entity/operation.entity";
 
 export interface StageDto extends Stage {
     results: ResultDto[]
     operations: Operation[]
+}
+
+export interface StageDtoNullable extends StageNullable {
+    results?: ResultDto[]
+    operations?: Operation[]
 }
 
 export interface FetchStageResponse {

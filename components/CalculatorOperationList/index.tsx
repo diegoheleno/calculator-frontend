@@ -1,16 +1,19 @@
 import styles from './calculator-operation.module.css'
 import CalculatorOperation from '../CalculatorOperation'
 import { Operation } from '../../entity/operation.entity'
+import { connect } from 'react-redux'
 
 interface CalculatorOperationListProps {
-    operations: Operation[]
+    operations: Operation[];
+    dispatch: any
 }
 
-const CalculatorOperationList: React.FunctionComponent<CalculatorOperationListProps> = props => {
-    
+const CalculatorOperationList: React.FunctionComponent<CalculatorOperationListProps> = (props: CalculatorOperationListProps) => {
+    const { operations } = props
+
     const getOperationElements = () => {
-        return props.operations && props.operations.length 
-            ? props.operations.map(operation => <CalculatorOperation operation={operation} />)
+        return operations && operations.length 
+            ? operations.map(operation => <CalculatorOperation operation={operation} />)
             : []
     }
 
@@ -27,4 +30,4 @@ const CalculatorOperationList: React.FunctionComponent<CalculatorOperationListPr
     </div>
 }
 
-export default CalculatorOperationList
+export default connect((store: any) => ({ operations: store.operations }))(CalculatorOperationList);
