@@ -12,6 +12,7 @@ import CalculatorOperationList from '../CalculatorOperationList';
 import { CreateStageBody, StageDto, StageDtoNullable, UpdateStageBody } from '../../dtos/stage.dto'
 import CalculatorOperationSelection from '../CalculatorOperationSelection';
 import { connect } from 'react-redux'
+import { createReducers } from '../../store';
 
 interface StageComponentProps {
     stage: StageDto
@@ -20,14 +21,8 @@ interface StageComponentProps {
 
 const StageComponent: React.FunctionComponent<StageComponentProps> = (props: StageComponentProps) => {
 
-    const { stage, dispatch } = props
-
-    const saveStage = (stage: StageDtoNullable) => {
-        dispatch({
-            type: 'SAVE_STAGE',
-            payload: stage
-        })
-    }
+    const { stage } = props
+    const stateHandler = createReducers(props.dispatch)
 
     const [ mode, setMode ] = useState<"new"|"edit">("edit");
     const [ operationType, setOperationType ] = useState<OperationType>(0);
@@ -40,7 +35,7 @@ const StageComponent: React.FunctionComponent<StageComponentProps> = (props: Sta
 
         if ((end || end == 0) && level && moves && (start || start == 0)) {
             const _stage = await services.stage.createStage({ end, level, moves, start, state: 1 })
-            saveStage({ ...stage, ..._stage })
+            stateHandler.saveStage({ ...stage, ..._stage })
         }
         else
             message.error('Parametros inválidos')
@@ -49,11 +44,11 @@ const StageComponent: React.FunctionComponent<StageComponentProps> = (props: Sta
     const updateStage = async () => {
         const { id, end, level, moves, start, state }: UpdateStageBody = stage
         const _stage = await services.stage.updateStage({ id, end, level, moves, start, state })
-        saveStage({ ...stage, ..._stage })
+        stateHandler.saveStage({ ...stage, ..._stage })
     }
 
     const fetchStageByLevel = async (id: number) => {
-        saveStage(await services.stage.fetchStageByLevel(id))
+        stateHandler.saveStage(await services.stage.fetchStageByLevel(id))
     }
 
     const addOperation = async () => {
@@ -65,14 +60,14 @@ const StageComponent: React.FunctionComponent<StageComponentProps> = (props: Sta
 
         const savedOperation = await services.operation.createOperation(newOperation);
         
-        saveStage({ ...stage, operations: [ ...stage.operations, savedOperation ] })
+        stateHandler.saveOperation([ ...stage.operations, savedOperation ])
     }
 
     useEffect(() => stage.id ? setMode('edit') : setMode('new'), [stage.id]);
 
     useEffect(() => { 
         setStageLoading(true)
-        saveStage({ id: undefined })
+        stateHandler.saveStage({ id: undefined })
         fetchStageByLevel(stage.level).finally(() => setTimeout(() => setStageLoading(false), 2000) )
      }, [stage.level]);
 
@@ -85,23 +80,23 @@ const StageComponent: React.FunctionComponent<StageComponentProps> = (props: Sta
                         min={1}
                         name="level"
                         value={stage.level}
-                        setValue={(level: number) => saveStage({ level })}
+                        setValue={(level: number) => stateHandler.saveStage({ level })}
                     />
                     <CalculatorInput
                         name="start"
                         value={stage.start}
-                        setValue={(start: number) => saveStage({ start })}
+                        setValue={(start: number) => stateHandler.saveStage({ start })}
                     />
                     <CalculatorInput
                         name="end"
                         value={stage.end}
-                        setValue={(end: number) => saveStage({ end })}
+                        setValue={(end: number) => stateHandler.saveStage({ end })}
                     />
                     <CalculatorInput
                         min={1}
                         name="moves"
                         value={stage.moves}
-                        setValue={(moves: number) => saveStage({ moves })}
+                        setValue={(moves: number) => stateHandler.saveStage({ moves })}
                     />
                 </div>
 
@@ -110,9 +105,7 @@ const StageComponent: React.FunctionComponent<StageComponentProps> = (props: Sta
                     <CalculatorButton text="New" onClickHandler={() => {}} />
                 </div>
                 
-                <div style={{ display: 'flex' }}>
-                    <CalculatorOperationList />
-                </div>
+                <CalculatorOperationList />
 
                 <div style={{ display: 'flex' }}>
                     <CalculatorOperationSelection value={operationType} setValue={setOperationType} />

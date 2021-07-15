@@ -46,7 +46,7 @@ const CalculatorResultList: React.FunctionComponent<CalculatorResultListProps> =
         setProgress(stage.results.length ?? 0)
         setPossibilities(stage.operations.length ** stage.moves)
         setIndexes(Array(stage.moves).fill(0))
-    }, [stage.moves, stage.operations.length])
+    }, [stage.moves, stage.operations.length, stage.results.length])
 
     useEffect(() => {
         if (progress > 0 && progress < possibilities)
@@ -77,10 +77,7 @@ const CalculatorResultList: React.FunctionComponent<CalculatorResultListProps> =
 
     const execute = async () => {
         const newResult = await services.result.createResult({ stageId: stage.id, value: 0 })
-        console.log('newResult: ', newResult)
         const { actions, result } = calculator.calculateNext(newResult);
-        console.log('actions: ', actions)
-        console.log('result: ', result)
 
         const promises: Promise<any>[] = [
             saveResult(result),
@@ -91,12 +88,13 @@ const CalculatorResultList: React.FunctionComponent<CalculatorResultListProps> =
             .map(action => props.stage.operations.find(operation => action.operationId == operation.id))
             .map(operation => operation ?? defaultOperation)
 
-        console.log('operations: ', operations)
-        
         if (result.value == stage.end) {
             corrects.unshift({ ...result, operations })
             setCorrects(corrects)
         } else {
+            if (results.length >= 20)
+                results.pop();
+                
             results.unshift({ ...result, operations })
             setResults(results)
         }
